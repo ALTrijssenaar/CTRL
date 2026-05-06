@@ -1,0 +1,45 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Electron: Main (Dist)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
+      "args": ["."],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "npm: build",
+      "windows": {
+        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
+      },
+      "outFiles": ["${workspaceFolder}/dist/main/**/*.js"],
+      "sourceMaps": true,
+      "env": {
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "name": "Electron: Dev Stack",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev:debug",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Electron: Attach (9229)",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "timeout": 30000,
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Electron: Full Debug",
+      "configurations": ["Electron: Dev Stack", "Electron: Attach (9229)"],
+      "stopAll": true
+    }
+  ]
+}

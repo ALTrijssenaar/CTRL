@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CTRL Repository Hub</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="background-glow"></div>
+    <main class="shell">
+      <header class="hero panel">
+        <div class="hero-copy">
+          <p class="eyebrow">CTRL</p>
+          <h1>Repository Hub</h1>
+          <p class="subtitle">
+            Fast operational view across GitHub and Azure DevOps with one-click
+            cloning, cache-aware startup, and live activity signals.
+          </p>
+        </div>
+        <div class="hero-glance">
+          <span class="hero-chip">GitHub + Azure DevOps</span>
+          <span class="hero-chip">Cache-first loading</span>
+          <span class="hero-chip">One-click local clone</span>
+        </div>
+      </header>
+
+      <section class="workspace">
+        <section class="workspace-main">
+          <section class="panel repo-panel">
+            <div class="repo-header">
+              <div>
+                <h2>Accessible Repositories</h2>
+                <p class="repo-header-copy">
+                  Activity-rich repositories stay visible even while metrics are
+                  still resolving from live sources.
+                </p>
+              </div>
+              <div class="repo-header-actions">
+                <button id="expand-all" type="button" class="tree-control-btn">
+                  Expand All
+                </button>
+                <button
+                  id="collapse-all"
+                  type="button"
+                  class="tree-control-btn"
+                >
+                  Collapse All
+                </button>
+                <button
+                  id="refresh-repos-top"
+                  type="button"
+                  class="tree-control-btn"
+                  title="Refresh repositories from live sources"
+                >
+                  Refresh
+                </button>
+                <button
+                  id="filter-issues"
+                  type="button"
+                  class="tree-control-btn"
+                  title="Show only repositories with open issues"
+                >
+                  Issues Only
+                </button>
+                <button
+                  id="filter-prs"
+                  type="button"
+                  class="tree-control-btn"
+                  title="Show only repositories with open pull requests"
+                >
+                  PRs Only
+                </button>
+                <button
+                  id="filter-notifications"
+                  type="button"
+                  class="tree-control-btn"
+                  title="Show only repositories with unread GitHub notifications"
+                >
+                  Unread Only
+                </button>
+                <span id="repo-count" class="pill">0 repositories</span>
+              </div>
+            </div>
+            <div id="repo-summary" class="repo-summary"></div>
+            <div id="repo-list" class="repo-list"></div>
+          </section>
+        </section>
+
+        <aside class="workspace-rail">
+          <details class="drawer settings-drawer">
+            <summary class="drawer-toggle">&#9881; Connections</summary>
+            <section class="panel settings-panel drawer-panel">
+              <form id="settings-form" class="settings-grid">
+                <label>
+                  GitHub Connections (JSON array)
+                  <textarea
+                    id="githubConnections"
+                    rows="9"
+                    spellcheck="false"
+                  ></textarea>
+                </label>
+                <label>
+                  Azure Organizations (JSON array)
+                  <textarea
+                    id="azureOrganizations"
+                    rows="9"
+                    spellcheck="false"
+                  ></textarea>
+                </label>
+                <label>
+                  Local Clone Root
+                  <input
+                    id="cloneBasePath"
+                    type="text"
+                    placeholder="/home/user/repos"
+                  />
+                </label>
+                <p class="hint">
+                  Use token env vars in connection objects (`tokenEnvVar` /
+                  `patEnvVar`) and place secrets in `.env`.
+                </p>
+                <div class="actions">
+                  <button id="save-settings" type="submit">
+                    Save Settings
+                  </button>
+                  <button id="refresh-repos" type="button">
+                    Refresh Repositories
+                  </button>
+                </div>
+              </form>
+              <p id="settings-status" class="status"></p>
+              <div class="live-refresh-section">
+                <h4 class="live-refresh-heading">Source Loading</h4>
+                <p class="hint">
+                  Select GitHub organizations and Azure DevOps projects to
+                  exclude from loading. Excluded namespaces are not loaded from
+                  cache or live fetch.
+                </p>
+                <div id="connection-toggles" class="connection-toggles"></div>
+              </div>
+            </section>
+          </details>
+
+          <details class="drawer debug-drawer">
+            <summary class="drawer-toggle">Debug Console</summary>
+            <section class="panel debug-panel drawer-panel">
+              <div class="repo-header">
+                <h2>Fetch Debug</h2>
+                <span id="debug-refresh" class="pill">No live refresh yet</span>
+              </div>
+              <p id="debug-cache-path" class="debug-cache-path"></p>
+              <div id="debug-list" class="debug-list"></div>
+            </section>
+          </details>
+        </aside>
+      </section>
+    </main>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

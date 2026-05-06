@@ -1,0 +1,42 @@
+{
+  "name": "ctrl-repo-hub",
+  "version": "1.0.0",
+  "description": "Electron application to manage and clone accessible GitHub and Azure DevOps repositories.",
+  "main": "dist/main/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:main\" \"npm:dev:renderer\" \"npm:dev:electron\"",
+    "dev:debug": "concurrently -k \"npm:dev:main\" \"npm:dev:renderer\" \"npm:dev:electron:debug\"",
+    "dev:main": "tsc -p tsconfig.main.json --watch",
+    "dev:renderer": "vite",
+    "dev:electron": "wait-on dist/main/main.js tcp:5173 && nodemon --watch dist/main --ext js --exec \"cross-env ELECTRON_RENDERER_URL=http://localhost:5173 electron .\"",
+    "dev:electron:debug": "wait-on dist/main/main.js tcp:5173 && nodemon --watch dist/main --ext js --exec \"cross-env ELECTRON_RENDERER_URL=http://localhost:5173 electron --inspect=9229 .\"",
+    "build": "npm run build:main && npm run build:renderer",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:renderer": "vite build",
+    "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit"
+  },
+  "keywords": [
+    "electron",
+    "github",
+    "azure-devops",
+    "repository-management"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.9.0",
+    "dotenv": "^16.4.5",
+    "simple-git": "^3.28.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.17",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^31.0.2",
+    "nodemon": "^3.1.10",
+    "typescript": "^5.8.3",
+    "vite": "^5.4.18",
+    "wait-on": "^8.0.3"
+  }
+}

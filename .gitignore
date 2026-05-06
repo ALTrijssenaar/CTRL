@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.vscode/*.log
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+ctrl.config.json
+!ctrl.config.example.json
