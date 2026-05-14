@@ -30,6 +30,7 @@ import {
   resolveGitHubToken,
   saveSettings,
   saveProjectConfig,
+  toggleAgenticWorkflowForRepo,
 } from "./services/settings-store";
 import {
   AppSettings,
@@ -614,6 +615,15 @@ function registerIpcHandlers(): void {
       };
     }
   });
+
+  ipcMain.handle(
+    "repo:toggleAgenticWorkflow",
+    async (_event, repoFullName: string, enabled: boolean) => {
+      toggleAgenticWorkflowForRepo(repoFullName, enabled);
+      const settings = getSettings();
+      return loadRepositoriesLive(settings);
+    },
+  );
 }
 
 function notifyConfigChanged(): void {

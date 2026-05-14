@@ -27,6 +27,11 @@ const api = {
     repository: RepositorySummary,
   ): Promise<AnalyzeRepositoryDescriptionResult> =>
     ipcRenderer.invoke("repo:analyze", { repository }),
+  toggleAgenticWorkflow: (
+    repoFullName: string,
+    enabled: boolean,
+  ): Promise<RepositorySummary[]> =>
+    ipcRenderer.invoke("repo:toggleAgenticWorkflow", repoFullName, enabled),
   onConfigChanged: (listener: () => void): (() => void) => {
     const wrapped = () => listener();
     ipcRenderer.on("config:changed", wrapped);

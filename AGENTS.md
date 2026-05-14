@@ -58,7 +58,11 @@
 - Analyze README extraction now filters image refs, badges, URLs, and file/path-like lines so generated descriptions remain plain explanatory text.
 - Analyze now produces a multi-sentence README summary (scored from multiple candidate lines) instead of a single first sentence; when README is missing, it summarizes the whole repository from scanned structure and dominant file types.
 - Analyze descriptions prioritize reader usefulness by combining purpose sentences with concrete key capabilities, major README areas, and notable repository contents (top directories/root files) where available.
-- `excludeFromLiveRefresh` now behaves as full source exclusion: excluded sources are omitted from startup cache results and live refreshes (not loaded at all).
+- Agentic workflow monitoring can be enabled/disabled per GitHub repo; state is persisted to `ctrl.config.json` as `agenticWorkflowEnabledRepos: string[]` (opt-in).
+- Per-repo Copilot metrics (PR interactions) are fetched from `GET /orgs/{org}/copilot/metrics`; metrics are split into last-month and current-month totals.
+- Repository cards show an "Enable Agent / Disable Agent" toggle button and, when enabled, an active/idle badge plus `⬡ last mo: N · this mo: M` token-burn display.
+- Summary bar includes a fifth "Agent Workflows" card showing monitored count, active count, and aggregate interactions.
+- Copilot metrics service is in `src/main/services/copilot-metrics.ts`; gracefully handles 403/404 (org not on Copilot plan) without errors.
 
 ## Maintenance Expectation
 

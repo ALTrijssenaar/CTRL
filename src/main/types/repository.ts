@@ -54,6 +54,10 @@ export interface RepositorySummary {
   cacheUpdatedAt?: number | null;
   cacheAgeSeconds?: number | null;
   dataSource?: RepositoryDataSource;
+  agenticWorkflowEnabled?: boolean;
+  copilotAgentActive?: boolean | null;
+  copilotInteractionsLastMonth?: number | null;
+  copilotInteractionsCurrentMonth?: number | null;
 }
 
 export interface RepositorySourceDebugState {
@@ -78,6 +82,7 @@ export interface AppSettings {
   githubConnections: GitHubConnection[];
   azureOrganizations: AzureOrganizationConnection[];
   cloneBasePath: string;
+  agenticWorkflowEnabledRepos?: string[];
 }
 
 export interface CloneRequest {
