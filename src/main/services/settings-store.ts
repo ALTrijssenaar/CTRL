@@ -105,6 +105,14 @@ function normalizeRawSettings(parsed: RawSettings): AppSettings {
     githubConnections: normalizeGitHubConnections(migratedGithubConnections),
     azureOrganizations: normalizeAzureOrganizations(migratedAzureOrganizations),
     cloneBasePath: parsed.cloneBasePath ?? defaults.cloneBasePath,
+    ...(Array.isArray(parsed.agenticWorkflowEnabledRepos) &&
+    parsed.agenticWorkflowEnabledRepos.length > 0
+      ? {
+          agenticWorkflowEnabledRepos: parsed.agenticWorkflowEnabledRepos.filter(
+            (r): r is string => typeof r === "string" && r.trim().length > 0,
+          ),
+        }
+      : {}),
   };
 }
 
@@ -122,6 +130,9 @@ function mergeSettings(
         ? normalizeAzureOrganizations(override.azureOrganizations)
         : base.azureOrganizations,
     cloneBasePath: override.cloneBasePath?.trim() || base.cloneBasePath,
+    agenticWorkflowEnabledRepos:
+      override.agenticWorkflowEnabledRepos ??
+      base.agenticWorkflowEnabledRepos,
   };
 }
 
@@ -191,6 +202,39 @@ function normalizeAzureOrganizations(
   }));
 
   return normalized.length > 0 ? normalized : defaults.azureOrganizations;
+}
+
+export function toggleAgenticWorkflowForRepo(
+  repoFullName: string,
+  enabled: boolean,
+): void {
+  let existing: Record<string, unknown> = {};
+  try {
+    if (fs.existsSync(projectConfigFilePath)) {
+      existing = JSON.parse(
+        fs.readFileSync(projectConfigFilePath, "utf8"),
+      ) as Record<string, unknown>;
+    }
+  } catch {
+    // Ignore parse errors.
+  }
+
+  const currentEnabled = Array.isArray(existing.agenticWorkflowEnabledRepos)
+    ? (existing.agenticWorkflowEnabledRepos as string[])
+    : [];
+
+  const updated = enabled
+    ? [...new Set([...currentEnabled, repoFullName])]
+    : currentEnabled.filter((r) => r !== repoFullName);
+
+  const updatedConfig = { ...existing, agenticWorkflowEnabledRepos: updated };
+
+  fs.mkdirSync(path.dirname(projectConfigFilePath), { recursive: true });
+  fs.writeFileSync(
+    projectConfigFilePath,
+    JSON.stringify(updatedConfig, null, 2),
+    "utf8",
+  );
 }
 
 export function saveProjectConfig(

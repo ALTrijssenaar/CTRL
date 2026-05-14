@@ -44,6 +44,10 @@ interface RepositorySummary {
   cacheUpdatedAt?: number | null;
   cacheAgeSeconds?: number | null;
   dataSource?: "cache" | "live";
+  agenticWorkflowEnabled?: boolean;
+  copilotAgentActive?: boolean | null;
+  copilotInteractionsLastMonth?: number | null;
+  copilotInteractionsCurrentMonth?: number | null;
 }
 
 type RepositoryFilterMode = "all" | "issues" | "prs" | "notifications";
@@ -489,6 +493,21 @@ function renderRepositorySummary(
     (repository) => !hasKnownActivityMetrics(repository),
   ).length;
 
+  const agentEnabledRepos = repositories.filter(
+    (r) => r.agenticWorkflowEnabled,
+  );
+  const agentActiveRepos = agentEnabledRepos.filter(
+    (r) => r.copilotAgentActive === true,
+  ).length;
+  const totalInteractionsLastMonth = agentEnabledRepos.reduce(
+    (sum, r) => sum + (r.copilotInteractionsLastMonth ?? 0),
+    0,
+  );
+  const totalInteractionsCurrentMonth = agentEnabledRepos.reduce(
+    (sum, r) => sum + (r.copilotInteractionsCurrentMonth ?? 0),
+    0,
+  );
+
   requiredRepoSummary.innerHTML = `
     <article class="summary-card">
       <span class="summary-label">Visible Repositories</span>
@@ -509,6 +528,11 @@ function renderRepositorySummary(
       <span class="summary-label">Live Data Coverage</span>
       <strong>${liveRepositories}/${repositories.length}</strong>
       <p>${unknownActivity} repositories still resolving activity</p>
+    </article>
+    <article class="summary-card summary-card-agent">
+      <span class="summary-label">Agent Workflows</span>
+      <strong>${agentEnabledRepos.length > 0 ? agentActiveRepos : "—"}</strong>
+      <p>${agentEnabledRepos.length} monitored · ${agentEnabledRepos.length > 0 ? `last mo: ${totalInteractionsLastMonth} · this mo: ${totalInteractionsCurrentMonth}` : "enable per repo to track"}</p>
     </article>
   `;
 }
@@ -542,6 +566,48 @@ function formatTimestamp(value: number | null | undefined): string {
   }
 
   return new Date(value).toLocaleString();
+}
+
+function formatInteractions(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "—";
+  }
+
+  return String(value);
+}
+
+function renderAgentRow(repo: RepositorySummary): string {
+  if (repo.provider !== "github") {
+    return "";
+  }
+
+  const enabled = repo.agenticWorkflowEnabled === true;
+  const hasData =
+    repo.copilotInteractionsLastMonth !== null &&
+    repo.copilotInteractionsLastMonth !== undefined;
+
+  const activeLabel = enabled
+    ? repo.copilotAgentActive === true
+      ? '<span class="agent-badge agent-badge-active">● Active</span>'
+      : repo.copilotAgentActive === false
+        ? '<span class="agent-badge agent-badge-idle">● No activity</span>'
+        : '<span class="agent-badge agent-badge-loading">fetching…</span>'
+    : "";
+
+  const tokenBurn =
+    enabled && hasData
+      ? `<span class="agent-token-burn" title="Copilot PR interactions (last month · this month)">⬡ last mo: <strong>${formatInteractions(repo.copilotInteractionsLastMonth)}</strong> · this mo: <strong>${formatInteractions(repo.copilotInteractionsCurrentMonth)}</strong></span>`
+      : "";
+
+  const toggleLabel = enabled ? "Disable Agent" : "Enable Agent";
+  const toggleClass = enabled ? "agent-toggle-btn agent-toggle-on" : "agent-toggle-btn";
+
+  return `
+    <div class="agent-row">
+      <button class="${toggleClass}" data-repo-id="${escapedHtml(repo.id)}" data-enabled="${enabled}" title="${enabled ? "Disable agentic workflow monitoring for this repo" : "Enable agentic workflow monitoring for this repo"}">${toggleLabel}</button>
+      ${activeLabel}
+      ${tokenBurn}
+    </div>`;
 }
 
 function renderDebugState(debugState: RepositoryDebugState): void {
@@ -955,6 +1021,7 @@ function renderRepositories(repositories: RepositorySummary[]): void {
                                       <span class="tag">data: ${escapedHtml(dataSource)}</span>
                                       <span class="tag">cache: ${escapedHtml(cacheAge)}</span>
                                     </div>
+                                    ${renderAgentRow(repo)}
                                     <span class="repo-path">${escapedHtml(repo.localPath ?? "")}</span>
                                   </div>
                                   <div class="repo-actions">
@@ -1051,6 +1118,47 @@ function renderRepositories(repositories: RepositorySummary[]): void {
 
       button.disabled = false;
       button.textContent = "Analyze";
+    });
+  }
+
+  for (const button of requiredRepoList.querySelectorAll<HTMLButtonElement>(
+    ".agent-toggle-btn",
+  )) {
+    button.addEventListener("click", async () => {
+      const repository = repositories.find(
+        (repo) => repo.id === button.dataset.repoId,
+      );
+      if (!repository) {
+        return;
+      }
+
+      const currentlyEnabled = button.dataset.enabled === "true";
+      const nextEnabled = !currentlyEnabled;
+
+      button.disabled = true;
+      button.textContent = nextEnabled ? "Enabling…" : "Disabling…";
+
+      try {
+        renderStatus(
+          `${nextEnabled ? "Enabling" : "Disabling"} agentic workflow for ${repository.fullName}…`,
+          "neutral",
+        );
+        const updated = await window.ctrlApi.toggleAgenticWorkflow(
+          repository.fullName,
+          nextEnabled,
+        );
+        renderRepositories(updated);
+        renderStatus(
+          `Agentic workflow ${nextEnabled ? "enabled" : "disabled"} for ${repository.fullName}. ${nextEnabled ? "Fetching Copilot metrics…" : ""}`,
+          "success",
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Toggle failed.";
+        renderStatus(message, "error");
+        button.disabled = false;
+        button.textContent = currentlyEnabled ? "Disable Agent" : "Enable Agent";
+      }
     });
   }
 }

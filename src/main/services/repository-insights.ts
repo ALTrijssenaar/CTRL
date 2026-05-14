@@ -5,6 +5,10 @@ import simpleGit from "simple-git";
 import { AppSettings, RepositorySummary } from "../types/repository";
 import { resolveRepositoryLocalPath } from "./git-service";
 import { resolveAzurePat, resolveGitHubToken } from "./settings-store";
+import {
+  fetchOrgCopilotMetrics,
+  RepoCopilotMetrics,
+} from "./copilot-metrics";
 
 interface EnrichmentOptions {
   includeRemoteMetrics: boolean;
@@ -466,15 +470,49 @@ export async function enrichRepositoriesWithInsights(
     Map<string, number> | null
   >();
 
+  // Per-org Copilot metrics keyed as "sourceId||org" → Map<repoName, metrics>
+  const copilotMetricsByOrgKey = new Map<string, Map<string, RepoCopilotMetrics>>();
+
+  const enabledRepos = new Set(settings.agenticWorkflowEnabledRepos ?? []);
+
   if (options.includeRemoteMetrics) {
+    // Fetch unread notifications and Copilot metrics per GitHub connection.
     await Promise.all(
       settings.githubConnections.map(async (connection) => {
         const token = resolveGitHubToken(connection);
-        const counts = await getGitHubUnreadNotificationCounts(
-          connection.apiBaseUrl || "https://api.github.com",
-          token,
+        const apiBaseUrl = connection.apiBaseUrl || "https://api.github.com";
+
+        const [notifCounts] = await Promise.all([
+          getGitHubUnreadNotificationCounts(apiBaseUrl, token),
+        ]);
+        githubNotificationCountsBySource.set(connection.id, notifCounts);
+
+        // Fetch Copilot metrics once per unique org that has ≥1 enabled repos.
+        const orgsForConnection = new Set<string>();
+        for (const repo of repositories) {
+          if (
+            repo.provider === "github" &&
+            repo.sourceId === connection.id &&
+            enabledRepos.has(repo.fullName)
+          ) {
+            const org =
+              repo.githubOwnerLogin ?? repo.fullName.split("/")[0] ?? "";
+            if (org) {
+              orgsForConnection.add(org);
+            }
+          }
+        }
+
+        await Promise.all(
+          Array.from(orgsForConnection).map(async (org) => {
+            const orgKey = `${connection.id}||${org}`;
+            if (copilotMetricsByOrgKey.has(orgKey)) {
+              return;
+            }
+            const metrics = await fetchOrgCopilotMetrics(org, apiBaseUrl, token);
+            copilotMetricsByOrgKey.set(orgKey, metrics);
+          }),
         );
-        githubNotificationCountsBySource.set(connection.id, counts);
       }),
     );
   }
@@ -489,6 +527,37 @@ export async function enrichRepositoriesWithInsights(
       );
       const localState = await getLocalRepositoryState(localPath);
 
+      // Resolve Copilot metrics for GitHub repos.
+      const agenticWorkflowEnabled =
+        repository.provider === "github" &&
+        enabledRepos.has(repository.fullName);
+
+      let copilotAgentActive: boolean | null = null;
+      let copilotInteractionsLastMonth: number | null = null;
+      let copilotInteractionsCurrentMonth: number | null = null;
+
+      if (agenticWorkflowEnabled && repository.provider === "github") {
+        const org =
+          repository.githubOwnerLogin ??
+          repository.fullName.split("/")[0] ??
+          "";
+        const orgKey = `${repository.sourceId}||${org}`;
+        const orgMetrics = copilotMetricsByOrgKey.get(orgKey);
+        const repoMetrics = orgMetrics?.get(repository.name);
+
+        if (repoMetrics) {
+          copilotAgentActive = repoMetrics.active;
+          copilotInteractionsLastMonth = repoMetrics.interactionsLastMonth;
+          copilotInteractionsCurrentMonth =
+            repoMetrics.interactionsCurrentMonth;
+        } else if (orgMetrics) {
+          // Org metrics fetched but no activity for this repo.
+          copilotAgentActive = false;
+          copilotInteractionsLastMonth = 0;
+          copilotInteractionsCurrentMonth = 0;
+        }
+      }
+
       if (repository.provider === "github") {
         if (!options.includeRemoteMetrics) {
           return {
@@ -499,6 +568,19 @@ export async function enrichRepositoriesWithInsights(
             openIssues: repository.openIssues ?? null,
             openPullRequests: repository.openPullRequests ?? null,
             unreadNotifications: repository.unreadNotifications ?? null,
+            agenticWorkflowEnabled,
+            copilotAgentActive:
+              agenticWorkflowEnabled
+                ? (repository.copilotAgentActive ?? null)
+                : null,
+            copilotInteractionsLastMonth:
+              agenticWorkflowEnabled
+                ? (repository.copilotInteractionsLastMonth ?? null)
+                : null,
+            copilotInteractionsCurrentMonth:
+              agenticWorkflowEnabled
+                ? (repository.copilotInteractionsCurrentMonth ?? null)
+                : null,
           };
         }
 
@@ -531,6 +613,10 @@ export async function enrichRepositoriesWithInsights(
           unreadNotifications: notificationCounts
             ? (notificationCounts.get(repository.fullName) ?? 0)
             : (repository.unreadNotifications ?? null),
+          agenticWorkflowEnabled,
+          copilotAgentActive,
+          copilotInteractionsLastMonth,
+          copilotInteractionsCurrentMonth,
         };
       }
 
@@ -543,6 +629,10 @@ export async function enrichRepositoriesWithInsights(
           openIssues: repository.openIssues ?? null,
           openPullRequests: repository.openPullRequests ?? null,
           unreadNotifications: repository.unreadNotifications ?? null,
+          agenticWorkflowEnabled: false,
+          copilotAgentActive: null,
+          copilotInteractionsLastMonth: null,
+          copilotInteractionsCurrentMonth: null,
         };
       }
 
@@ -555,6 +645,10 @@ export async function enrichRepositoriesWithInsights(
         openIssues: repository.openIssues ?? null,
         openPullRequests: azurePrCount ?? repository.openPullRequests ?? null,
         unreadNotifications: repository.unreadNotifications ?? null,
+        agenticWorkflowEnabled: false,
+        copilotAgentActive: null,
+        copilotInteractionsLastMonth: null,
+        copilotInteractionsCurrentMonth: null,
       };
     },
   );

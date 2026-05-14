@@ -54,6 +54,10 @@ interface RepositorySummary {
   cacheUpdatedAt?: number | null;
   cacheAgeSeconds?: number | null;
   dataSource?: RepositoryDataSource;
+  agenticWorkflowEnabled?: boolean;
+  copilotAgentActive?: boolean | null;
+  copilotInteractionsLastMonth?: number | null;
+  copilotInteractionsCurrentMonth?: number | null;
 }
 
 interface RepositorySourceDebugState {
@@ -107,6 +111,10 @@ interface CtrlApi {
   analyzeRepository: (
     repository: RepositorySummary,
   ) => Promise<AnalyzeRepositoryDescriptionResult>;
+  toggleAgenticWorkflow: (
+    repoFullName: string,
+    enabled: boolean,
+  ) => Promise<RepositorySummary[]>;
   onConfigChanged: (listener: () => void) => () => void;
   onRepositoriesUpdated: (
     listener: (repositories: RepositorySummary[]) => void,

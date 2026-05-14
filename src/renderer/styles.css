@@ -448,7 +448,7 @@ button:disabled {
 
 .repo-summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
@@ -463,7 +463,94 @@ button:disabled {
   border: 1px solid rgba(196, 87, 44, 0.14);
 }
 
-.summary-card strong {
+.summary-card-agent {
+  background: linear-gradient(
+    180deg,
+    rgba(219, 238, 232, 0.94),
+    rgba(210, 240, 232, 0.88)
+  );
+  border-color: rgba(31, 122, 73, 0.2);
+}
+
+.summary-card-agent .summary-label {
+  color: #1f7a49;
+}
+
+.agent-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.28rem;
+  flex-wrap: wrap;
+}
+
+.agent-toggle-btn {
+  border: 1px solid var(--line);
+  background: #f5f0e8;
+  color: var(--ink-muted);
+  padding: 0.22rem 0.6rem;
+  font-size: 0.72rem;
+  font-family: "IBM Plex Mono", monospace;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.agent-toggle-btn:hover {
+  background: var(--teal-soft);
+  color: #1c4a43;
+  border-color: rgba(31, 122, 73, 0.35);
+}
+
+.agent-toggle-on {
+  background: var(--teal-soft);
+  color: #1c4a43;
+  border-color: rgba(31, 122, 73, 0.35);
+}
+
+.agent-toggle-on:hover {
+  background: #f5f0e8;
+  color: var(--ink-muted);
+  border-color: var(--line);
+}
+
+.agent-badge {
+  font-size: 0.7rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.agent-badge-active {
+  background: #d1f5e0;
+  color: #145936;
+}
+
+.agent-badge-idle {
+  background: #f0e7d8;
+  color: #6b5a4e;
+}
+
+.agent-badge-loading {
+  background: #fdf3e0;
+  color: #7d5c00;
+  font-style: italic;
+}
+
+.agent-token-burn {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  font-family: "IBM Plex Mono", monospace;
+  white-space: nowrap;
+}
+
+.agent-token-burn strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
   display: block;
   margin-top: 0.2rem;
   font-size: 1.6rem;
@@ -818,7 +905,7 @@ button:disabled {
   }
 
   .repo-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .hero {
